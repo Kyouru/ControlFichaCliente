@@ -48,85 +48,133 @@ Private Sub btCancelar_Click()
     busqFicha.Show (0)
 End Sub
 
+Private Sub btGerencia_Click()
+    newGerencia.Show (0)
+End Sub
+
+Private Sub btAccionista_Click()
+    newAccionista.Show (0)
+End Sub
+
+Private Sub btRepresentante_Click()
+    newRepresentante.Show (0)
+End Sub
+
 Private Sub btGuardar_Click()
     Dim i As Integer
     Dim j As Integer
+    Dim k As Integer
+    Dim m As Integer
+    
     Dim suma As Double
-    Dim valido As Boolean
     Dim strAccionistas As String
-    valido = True
+    Dim strRepresentantes As String
+    Dim strGerencias As String
+    
     strAccionistas = ";"
     suma = 0
+    
+    'Validar Accionistas
     For i = 1 To 16
-        If Me.Controls("ComboBox" & i).Visible Then
-            If Me.Controls("ComboBox" & i).ListIndex <> -1 And Me.Controls("TextBox" & i).Value <> "" Then
-                If InStr(strAccionistas, ";" & Me.Controls("ComboBox" & i).List(Me.Controls("ComboBox" & i).ListIndex, 1) & ";") = 0 Then
-                    strAccionistas = strAccionistas & Me.Controls("ComboBox" & i).List(Me.Controls("ComboBox" & i).ListIndex, 1) & ";"
+        If Me.Controls("cmbAccionista" & i).Visible Then
+            If Me.Controls("cmbAccionista" & i).ListIndex <> -1 And Me.Controls("TextBox" & i).Value <> "" Then
+                If InStr(strAccionistas, ";" & Me.Controls("cmbAccionista" & i).List(Me.Controls("cmbAccionista" & i).ListIndex, 1) & ";") = 0 Then
+                    strAccionistas = strAccionistas & Me.Controls("cmbAccionista" & i).List(Me.Controls("cmbAccionista" & i).ListIndex, 1) & ";"
                     If IsNumeric(Me.Controls("TextBox" & i).Value) Then
                         If CDbl(Me.Controls("TextBox" & i).Value) >= 0 And CDbl(Me.Controls("TextBox" & i).Value) <= 100 Then
                             suma = suma + CDbl(Me.Controls("TextBox" & i).Value)
                         Else
                             MsgBox "Error Valor fuera de rango Accionista " & i
-                            valido = False
-                            Exit For
+                            Exit Sub
                         End If
                     Else
                         MsgBox "Error Valor no Numerico Accionista " & i
-                        valido = False
-                        Exit For
+                        Exit Sub
                     End If
                 Else
                     MsgBox "Accionista " & i & " Repetido"
-                    valido = False
-                    Exit For
+                    Exit Sub
                 End If
             Else
                 MsgBox "Error Accionista " & i
-                valido = False
-                Exit For
+                Exit Sub
             End If
         Else
             Exit For
         End If
     Next i
     
-    'Validaciones
-    If Not valido Then
-        Exit Sub
-    End If
+    'Validar Representantes Legales
+    For j = 1 To 8
+        If Me.Controls("cmbRepresentante" & j).Visible Then
+            If Me.Controls("cmbRepresentante" & j).ListIndex <> -1 Then
+                If InStr(strRepresentante, ";" & Me.Controls("cmbRepresentante" & j).List(Me.Controls("cmbRepresentante" & j).ListIndex, 1) & ";") = 0 Then
+                    strRepresentantes = strRepresentantes & Me.Controls("cmbRepresentante" & j).List(Me.Controls("cmbRepresentante" & j).ListIndex, 1) & ";"
+                Else
+                    MsgBox "Representante Legal " & j & " Repetido"
+                    Exit Sub
+                End If
+            Else
+                MsgBox "Error Representante Legal " & j
+                Exit Sub
+            End If
+        Else
+            Exit For
+        End If
+    Next j
+    
+    'Validar Gerencia
+    valido = True
+    For k = 1 To 5
+        If Me.Controls("cmbGerencia" & k).Visible Then
+            If Me.Controls("cmbGerencia" & k).ListIndex <> -1 Then
+                If InStr(strGerencias, ";" & Me.Controls("cmbGerencia" & k).List(Me.Controls("cmbGerencia" & k).ListIndex, 1) & ";") = 0 Then
+                    strGerencias = strGerencias & Me.Controls("cmbGerencia" & k).List(Me.Controls("cmbGerencia" & k).ListIndex, 1) & ";"
+                Else
+                    MsgBox "Gerencia " & k & " Repetido"
+                    Exit Sub
+                End If
+            Else
+                MsgBox "Error Gerencia " & k
+                Exit Sub
+            End If
+        Else
+            Exit For
+        End If
+    Next k
     
     If lbTotal.Caption <> "100.00" Then
         MsgBox "No Suma 100%"
+        closeRS
         Exit Sub
     End If
         
     If tbFecha.Value = "" Then
         MsgBox "Falta Fecha de la Ficha"
+        closeRS
         Exit Sub
     Else
         If Not IsDate(tbFecha.Value) Then
             MsgBox "Fecha Invalida"
+            closeRS
             Exit Sub
         End If
-    End If
-    
-    If cmbTipoFicha.ListIndex = -1 Then
-        MsgBox "Tipo Ficha Invalida"
-        Exit Sub
     End If
     
     If tbRuta.Text = "" Then
         MsgBox "Ruta Vacia"
+        closeRS
         Exit Sub
     Else
         If Dir(tbRuta.Text) = "" Then
             MsgBox "No existe archivo " & tbRuta.Text
+            closeRS
             Exit Sub
         End If
     End If
     
-    strSQL = "INSERT INTO FICHA (ID_PRESTAMO_FK, ID_TIPO_FICHA_FK, FECHA_FICHA, FECHA_INGRESO, USUARIO, EXTENSION) VALUES " & _
-                            "(" & idPrestamo & ", " & cmbTipoFicha.List(cmbTipoFicha.ListIndex, 1) & ", #" & fechaStrStr(tbFecha.Value) & "#, #" & Format(Now(), "yyyy-MM-dd HH:mm:ss") & "#, '" & Application.UserName & "', '" & Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), ".")(UBound(Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), "."))) & "')"
+    strSQL = "INSERT INTO FICHA (ID_SOCIO_FK) VALUES " & _
+                            "(" & idSocio & ")"
                         
     OpenDB
     On Error GoTo Handle:
@@ -139,21 +187,49 @@ Private Sub btGuardar_Click()
     
     idFicha = rs.Fields(0).Value
     
+    strSQL = "INSERT INTO FICHA_MOD (ID_FICHA_FK, FECHA_FICHA, FECHA_MODIFICA, USUARIO_MODIFICA, EXTENSION) VALUES " & _
+                            "(" & idFicha & ", #" & fechaStrStr(tbFecha.Value) & "#, #" & Format(Now(), "yyyy-MM-dd HH:mm:ss") & "#, '" & Application.UserName & "', '" & Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), ".")(UBound(Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), "."))) & "')"
+    
+    On Error GoTo Handle:
+    cnn.Execute strSQL
+    
+    strSQL = "SELECT @@IDENTITY"
+    
+    rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
+    On Error GoTo 0
+    
+    idMod = rs.Fields(0).Value
     
     Dim fso As Scripting.FileSystemObject
     Set fso = New Scripting.FileSystemObject
     
-    Call fso.CopyFile(tbRuta.Text, ActiveWorkbook.Path & "\RECURSOS\" & idFicha & "." & Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), ".")(UBound(Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), "."))), 1)
+    Call fso.CopyFile(tbRuta.Text, ActiveWorkbook.Path & "\RECURSOS\" & idMod & "." & Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), ".")(UBound(Split(Split(tbRuta.Text, "\")(UBound(Split(tbRuta.Text, "\"))), "."))), 1)
     
     Set rs = Nothing
     
-    For j = 1 To i - 1
-        strSQL = "INSERT INTO FICHA_ACCIONISTA (ID_FICHA_FK, ID_ACCIONISTA_FK, PARTICIPACION) VALUES " & _
-                "(" & idFicha & ", " & Me.Controls("ComboBox" & j).List(Me.Controls("ComboBox" & j).ListIndex, 1) & ", " & Me.Controls("TextBox" & j) & ")"
+    For m = 1 To i - 1
+        strSQL = "INSERT INTO FICHA_ACCIONISTA (ID_FICHA_FK, ID_ACCIONISTA_FK, PARTICIPACION, ID_FICHA_MOD_SIGUIENTE) VALUES " & _
+                "(" & idFicha & ", " & Me.Controls("cmbAccionista" & m).List(Me.Controls("cmbAccionista" & m).ListIndex, 1) & ", " & Me.Controls("TextBox" & m) & ", 0)"
         On Error GoTo Handle:
         cnn.Execute strSQL
         On Error GoTo 0
-    Next j
+    Next m
+    
+    For m = 1 To k - 1
+        strSQL = "INSERT INTO FICHA_GERENCIA (ID_FICHA_FK, ID_GERENCIA_FK, ID_FICHA_MOD_SIGUIENTE) VALUES " & _
+                "(" & idFicha & ", " & Me.Controls("cmbGerencia" & m).List(Me.Controls("cmbGerencia" & m).ListIndex, 1) & ", 0)"
+        On Error GoTo Handle:
+        cnn.Execute strSQL
+        On Error GoTo 0
+    Next m
+    
+    For m = 1 To j - 1
+        strSQL = "INSERT INTO FICHA_REPRESENTANTE (ID_FICHA_FK, ID_REPRESENTANTE_FK, ID_FICHA_MOD_SIGUIENTE) VALUES " & _
+                "(" & idFicha & ", " & Me.Controls("cmbRepresentante" & m).List(Me.Controls("cmbRepresentante" & m).ListIndex, 1) & ", 0)"
+        On Error GoTo Handle:
+        cnn.Execute strSQL
+        On Error GoTo 0
+    Next m
     
     MsgBox "Registro Exitoso"
     
@@ -170,32 +246,6 @@ Handle:
     closeRS
 End Sub
 
-Private Sub btMas_Click()
-    If CInt(nAccionistas.Caption) < 16 Then
-        nAccionistas.Caption = CInt(nAccionistas.Caption) + 1
-        Me.Controls("ComboBox" & nAccionistas.Caption).Visible = True
-        Me.Controls("TextBox" & nAccionistas.Caption).Visible = True
-        btCancelar.Top = btCancelar.Top + 30
-        btGuardar.Top = btGuardar.Top + 30
-        Me.Height = Me.Height + 30
-    End If
-End Sub
-
-Private Sub btMenos_Click()
-    If CInt(nAccionistas.Caption) > 1 Then
-        Me.Controls("ComboBox" & nAccionistas.Caption).Visible = False
-        Me.Controls("TextBox" & nAccionistas.Caption).Visible = False
-        nAccionistas.Caption = CInt(nAccionistas.Caption) - 1
-        btCancelar.Top = btCancelar.Top - 30
-        btGuardar.Top = btGuardar.Top - 30
-        Me.Height = Me.Height - 30
-    End If
-End Sub
-
-Private Sub btAccionista_Click()
-    newAccionista.Show (0)
-End Sub
-
 Private Sub verificarParticipacion(txtBox As Object)
     If IsNumeric(txtBox.Value) Then
         If CDbl(txtBox.Value) >= 0 And CDbl(txtBox.Value) <= 100 Then
@@ -209,6 +259,86 @@ Private Sub verificarParticipacion(txtBox As Object)
         MsgBox "Valor no numerico"
         txtBox.Value = ""
     End If
+End Sub
+
+Private Sub btMasA_Click()
+    If CInt(nAccionistas.Caption) < 16 Then
+        nAccionistas.Caption = CInt(nAccionistas.Caption) + 1
+        Me.Controls("cmbAccionista" & nAccionistas.Caption).Visible = True
+        Me.Controls("TextBox" & nAccionistas.Caption).Visible = True
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub btMenosA_Click()
+    If CInt(nAccionistas.Caption) > 1 Then
+        Me.Controls("cmbAccionista" & nAccionistas.Caption).Visible = False
+        Me.Controls("TextBox" & nAccionistas.Caption).Visible = False
+        nAccionistas.Caption = CInt(nAccionistas.Caption) - 1
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub btMasG_Click()
+    If CInt(nGerencia.Caption) < 5 Then
+        nGerencia.Caption = CInt(nGerencia.Caption) + 1
+        Me.Controls("cmbGerencia" & nGerencia.Caption).Visible = True
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub btMenosG_Click()
+    If CInt(nGerencia.Caption) > 1 Then
+        Me.Controls("cmbGerencia" & nGerencia.Caption).Visible = False
+        nGerencia.Caption = CInt(nGerencia.Caption) - 1
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub btMasRL_Click()
+    If CInt(nRepresentanteLegal.Caption) < 8 Then
+        nRepresentanteLegal.Caption = CInt(nRepresentanteLegal.Caption) + 1
+        Me.Controls("cmbRepresentante" & nRepresentanteLegal.Caption).Visible = True
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub btMenosRL_Click()
+    If CInt(nRepresentanteLegal.Caption) > 1 Then
+        Me.Controls("cmbRepresentante" & nRepresentanteLegal.Caption).Visible = False
+        nRepresentanteLegal.Caption = CInt(nRepresentanteLegal.Caption) - 1
+        
+        AjustarTopHeight
+    End If
+End Sub
+
+Private Sub AjustarTopHeight()
+    Dim inicioHeightForm As Integer
+    Dim inicioCancelarTop As Integer
+    Dim inicioGuardarTop As Integer
+    
+    inicioHeightForm = 210
+    inicioCancelarTop = 150
+    inicioGuardarTop = 150
+    
+    Dim maxCmb As Integer
+    maxCmb = CInt(nGerencia.Caption)
+    If maxCmb < CInt(nRepresentanteLegal.Caption) Then
+        maxCmb = CInt(nRepresentanteLegal.Caption)
+    End If
+    If maxCmb < CInt(nAccionistas.Caption) - 3 Then
+        maxCmb = CInt(nAccionistas.Caption) - 3
+    End If
+    
+    btCancelar.Top = inicioCancelarTop + 30 * (maxCmb - 1)
+    btGuardar.Top = inicioGuardarTop + 30 * (maxCmb - 1)
+    Me.Height = inicioHeightForm + 30 * (maxCmb - 1)
+    
 End Sub
 
 Private Sub TextBox1_Exit(ByVal Cancel As MSForms.ReturnBoolean)
@@ -277,11 +407,9 @@ End Sub
 
 Private Sub UserForm_Initialize()
     Dim i As Integer
-    strSQL = "SELECT DOI, CODIGO_SOCIO, SOLICITUD, NOMBRE_PRODUCTO, NOMBRE_SOCIO, NOMBRE_MONEDA, MONTO " & _
-    "FROM ((PRESTAMO LEFT JOIN SOCIO ON SOCIO.ID_SOCIO = PRESTAMO.ID_SOCIO_FK)" & _
-    "LEFT JOIN MONEDA ON MONEDA.ID_MONEDA = PRESTAMO.ID_MONEDA_FK) " & _
-    "LEFT JOIN PRODUCTO ON PRODUCTO.ID_PRODUCTO = PRESTAMO.ID_PRODUCTO_FK " & _
-    "WHERE ID_PRESTAMO = " & idPrestamo
+    strSQL = "SELECT DOI, CODIGO_SOCIO, NOMBRE_SOCIO " & _
+    "FROM SOCIO " & _
+    "WHERE ID_SOCIO = " & idSocio
     
     OpenDB
     On Error GoTo Handle:
@@ -291,34 +419,13 @@ Private Sub UserForm_Initialize()
         lbNombre.Caption = lbNombre.Caption & rs.Fields("NOMBRE_SOCIO")
         lbCodigo.Caption = lbCodigo.Caption & rs.Fields("CODIGO_SOCIO")
         lbDOI.Caption = lbDOI.Caption & rs.Fields("DOI")
-        lbSolicitud.Caption = lbSolicitud.Caption & rs.Fields("SOLICITUD")
-        lbProducto.Caption = lbProducto.Caption & rs.Fields("NOMBRE_PRODUCTO")
-        lbMoneda.Caption = lbMoneda.Caption & rs.Fields("NOMBRE_MONEDA")
-        lbMonto.Caption = lbMonto.Caption & Format(rs.Fields("MONTO"), "#,##0.00")
     End If
-    
-    Set rs = Nothing
-    
-    strSQL = "SELECT * FROM TIPO_FICHA WHERE ANULADO = FALSE"
-    
-    On Error GoTo Handle:
-    rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
-    On Error GoTo 0
-    If rs.RecordCount > 0 Then
-        
-        i = 0
-        Do While Not rs.EOF
-            cmbTipoFicha.AddItem rs.Fields("NOMBRE_TIPO_FICHA")
-            cmbTipoFicha.List(i, 1) = rs.Fields("ID_TIPO_FICHA")
-            i = i + 1
-            rs.MoveNext
-        Loop
-    End If
-    cmbTipoFicha.ListIndex = 0
     
     Set rs = Nothing
     
     actualizarAccionistas
+    actualizarGerencias
+    actualizarRepresentantes
     
 Handle:
     If cnn.Errors.count > 0 Then
@@ -343,23 +450,23 @@ Public Sub actualizarAccionistas()
     
     If rs.RecordCount > 0 Then
         For i = 1 To 16
-            If Me.Controls("ComboBox" & i).ListIndex <> -1 Then
-                arr(i) = Me.Controls("ComboBox" & i).List(Me.Controls("ComboBox" & i).ListIndex, 0)
+            If Me.Controls("cmbAccionista" & i).ListIndex <> -1 Then
+                arr(i) = Me.Controls("cmbAccionista" & i).List(Me.Controls("cmbAccionista" & i).ListIndex, 0)
             End If
-            Me.Controls("ComboBox" & i).Clear
+            Me.Controls("cmbAccionista" & i).Clear
         Next i
         i = 0
         Do While Not rs.EOF
             For j = 1 To 16
-                Me.Controls("ComboBox" & j).AddItem rs.Fields("NOMBRE_ACCIONISTA")
-                Me.Controls("ComboBox" & j).List(i, 1) = rs.Fields("ID_ACCIONISTA")
+                Me.Controls("cmbAccionista" & j).AddItem rs.Fields("NOMBRE_ACCIONISTA")
+                Me.Controls("cmbAccionista" & j).List(i, 1) = rs.Fields("ID_ACCIONISTA")
             Next j
             i = i + 1
             rs.MoveNext
         Loop
         
         For i = 1 To 16
-            Me.Controls("ComboBox" & i).Value = arr(i)
+            Me.Controls("cmbAccionista" & i).Value = arr(i)
         Next i
     End If
     
@@ -367,6 +474,92 @@ Handle:
     If cnn.Errors.count > 0 Then
         'Log del Error
         Call Error_Handle(cnn.Errors.Item(0).Source, Me.Name & " - actualizarAccionistas", strSQL, cnn.Errors.Item(0).Number, cnn.Errors.Item(0).Description)
+    End If
+    cnn.Errors.Clear
+    closeRS
+End Sub
+
+Public Sub actualizarGerencias()
+    Dim i As Integer
+    Dim arr(1 To 5) As String
+    i = 0
+    
+    strSQL = "SELECT * FROM GERENCIA WHERE ANULADO = FALSE AND ID_SOCIO_FK = " & idSocio & " ORDER BY NOMBRE_GERENCIA"
+    
+    OpenDB
+    On Error GoTo Handle:
+    rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
+    On Error GoTo 0
+    
+    If rs.RecordCount > 0 Then
+        For i = 1 To 5
+            If Me.Controls("cmbGerencia" & i).ListIndex <> -1 Then
+                arr(i) = Me.Controls("cmbGerencia" & i).List(Me.Controls("cmbGerencia" & i).ListIndex, 0)
+            End If
+            Me.Controls("cmbGerencia" & i).Clear
+        Next i
+        i = 0
+        Do While Not rs.EOF
+            For j = 1 To 5
+                Me.Controls("cmbGerencia" & j).AddItem rs.Fields("NOMBRE_GERENCIA")
+                Me.Controls("cmbGerencia" & j).List(i, 1) = rs.Fields("ID_GERENCIA")
+            Next j
+            i = i + 1
+            rs.MoveNext
+        Loop
+        
+        For i = 1 To 5
+            Me.Controls("cmbGerencia" & i).Value = arr(i)
+        Next i
+    End If
+    
+Handle:
+    If cnn.Errors.count > 0 Then
+        'Log del Error
+        Call Error_Handle(cnn.Errors.Item(0).Source, Me.Name & " - actualizarGerencia", strSQL, cnn.Errors.Item(0).Number, cnn.Errors.Item(0).Description)
+    End If
+    cnn.Errors.Clear
+    closeRS
+End Sub
+
+Public Sub actualizarRepresentantes()
+    Dim i As Integer
+    Dim arr(1 To 8) As String
+    i = 0
+    
+    strSQL = "SELECT * FROM REPRESENTANTE WHERE ANULADO = FALSE AND ID_SOCIO_FK = " & idSocio & " ORDER BY NOMBRE_REPRESENTANTE"
+    
+    OpenDB
+    On Error GoTo Handle:
+    rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
+    On Error GoTo 0
+    
+    If rs.RecordCount > 0 Then
+        For i = 1 To 8
+            If Me.Controls("cmbRepresentante" & i).ListIndex <> -1 Then
+                arr(i) = Me.Controls("cmbRepresentante" & i).List(Me.Controls("cmbRepresentante" & i).ListIndex, 0)
+            End If
+            Me.Controls("cmbRepresentante" & i).Clear
+        Next i
+        i = 0
+        Do While Not rs.EOF
+            For j = 1 To 8
+                Me.Controls("cmbRepresentante" & j).AddItem rs.Fields("NOMBRE_REPRESENTANTE")
+                Me.Controls("cmbRepresentante" & j).List(i, 1) = rs.Fields("ID_REPRESENTANTE")
+            Next j
+            i = i + 1
+            rs.MoveNext
+        Loop
+        
+        For i = 1 To 8
+            Me.Controls("cmbRepresentante" & i).Value = arr(i)
+        Next i
+    End If
+    
+Handle:
+    If cnn.Errors.count > 0 Then
+        'Log del Error
+        Call Error_Handle(cnn.Errors.Item(0).Source, Me.Name & " - actualizarRepresentante", strSQL, cnn.Errors.Item(0).Number, cnn.Errors.Item(0).Description)
     End If
     cnn.Errors.Clear
     closeRS

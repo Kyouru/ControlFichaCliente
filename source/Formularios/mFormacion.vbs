@@ -1,19 +1,32 @@
 
 Private Sub btAgregar_Click()
     Dim myValue As Variant
-    myValue = InputBox("Nombre del Nuevo Grupo Economico:", "Nuevo Grupo Economico")
+    myValue = InputBox("Nombre de la Nueva Formacion:", "Nueva Formacion")
     If myValue <> "" Then
-        strSQL = "INSERT INTO GRUPO (NOMBRE_GRUPO) VALUES ('" & UCase(myValue) & "');"
-        
+    
         OpenDB
+        
+        strSQL = "SELECT * FROM FORMACION WHERE NOMBRE_FORMACION = '" & UCase(myValue) & "'"
+        
         On Error GoTo Handle:
-        cnn.Execute strSQL
+        rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
         On Error GoTo 0
         
-        closeRS
+        If rs.RecordCount = 0 Then
         
-        ActualizarHoja
-        ActualizarLista
+            strSQL = "INSERT INTO FORMACION (NOMBRE_FORMACION) VALUES ('" & UCase(myValue) & "');"
+            
+            On Error GoTo Handle:
+            cnn.Execute strSQL
+            On Error GoTo 0
+            
+            closeRS
+            
+            ActualizarHoja
+            ActualizarLista
+        Else
+            MsgBox "Formacion ya existe"
+        End If
     End If
 Handle:
     If cnn.Errors.count > 0 Then
@@ -32,7 +45,7 @@ Private Sub btCerrar_Click()
 End Sub
 
 Public Sub ActualizarHoja()
-    strSQL = "SELECT ID_GRUPO, NOMBRE_GRUPO FROM GRUPO WHERE GRUPO.ANULADO = FALSE ORDER BY NOMBRE_GRUPO"
+    strSQL = "SELECT ID_FORMACION, NOMBRE_FORMACION FROM FORMACION F WHERE F.ANULADO = FALSE ORDER BY NOMBRE_FORMACION"
     
     ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Range(ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Range("A2"), _
     ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Range("A2").End(xlDown)).ClearContents
@@ -42,8 +55,8 @@ Public Sub ActualizarHoja()
     rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
     On Error GoTo 0
     
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 1) = "ID_GRUPO"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 2) = "NOMBRE_GRUPO"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 1) = "ID_FORMACION"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 2) = "NOMBRE_FORMACION"
     
     If rs.RecordCount > 0 Then
         ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Range("A2").CopyFromRecordset rs
@@ -61,7 +74,7 @@ End Sub
 
 Public Sub ActualizarLista()
     With ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP)
-        ListBox1.ColumnWidths = "40;80;"
+        ListBox1.ColumnWidths = "40;100;"
         ListBox1.ColumnCount = 2
         ListBox1.ColumnHeads = True
         
@@ -81,12 +94,12 @@ End Sub
 Private Sub btEliminar_Click()
     If ListBox1.ListIndex <> -1 Then
         Dim resp As Integer
-        resp = MsgBox("Esta seguro que desea eliminar este grupo?", vbYesNo + vbQuestion, ListBox1.List(ListBox1.ListIndex, 1))
+        resp = MsgBox("Esta seguro que desea eliminar esta formacion?", vbYesNo + vbQuestion, ListBox1.List(ListBox1.ListIndex, 1))
         If resp = vbYes Then
         
             OpenDB
             On Error GoTo Handle:
-            cnn.Execute ("UPDATE GRUPO SET GRUPO.ANULADO = TRUE WHERE ID_GRUPO = " & ListBox1.List(ListBox1.ListIndex, 0))
+            cnn.Execute ("UPDATE FORMACION SET ANULADO = TRUE WHERE ID_FORMACION = " & ListBox1.List(ListBox1.ListIndex, 0))
             On Error GoTo 0
             
             closeRS
@@ -109,19 +122,32 @@ End Sub
 Private Sub btModificar_Click()
     If ListBox1.ListIndex <> -1 Then
         Dim myValue As Variant
-        myValue = InputBox("Nuevo Nombre del Grupo Económico:", "Modificar Grupo Económico", ListBox1.List(ListBox1.ListIndex, 1))
+        myValue = InputBox("Nuevo Nombre de la Formacion:", "Modificar Formacion", ListBox1.List(ListBox1.ListIndex, 1))
         If myValue <> "" Then
-            strSQL = "UPDATE GRUPO SET NOMBRE_GRUPO = '" & UCase(myValue) & "' WHERE ID_GRUPO = " & ListBox1.List(ListBox1.ListIndex, 0)
-            
+    
             OpenDB
+            
+            strSQL = "SELECT * FROM FORMACION WHERE NOMBRE_FORMACION = '" & UCase(myValue) & "'"
+            
             On Error GoTo Handle:
-            cnn.Execute strSQL
+            rs.Open strSQL, cnn, adOpenKeyset, adLockOptimistic
             On Error GoTo 0
             
-            closeRS
+            If rs.RecordCount = 0 Then
             
-            ActualizarHoja
-            ActualizarLista
+                strSQL = "UPDATE FORMACION SET NOMBRE_FORMACION = '" & UCase(myValue) & "' WHERE ID_FORMACION = " & ListBox1.List(ListBox1.ListIndex, 0)
+                
+                On Error GoTo Handle:
+                cnn.Execute strSQL
+                On Error GoTo 0
+                
+                closeRS
+                
+                ActualizarHoja
+                ActualizarLista
+            Else
+                MsgBox "Formacion ya existe"
+            End If
         End If
     Else
         MsgBox "Seleccione una entrada"
@@ -143,3 +169,7 @@ End Sub
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     closeRS
 End Sub
+
+
+
+

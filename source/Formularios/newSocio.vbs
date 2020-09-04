@@ -21,6 +21,10 @@ Private Sub btGuardar_Click()
         Set rs = Nothing
         
         Unload Me
+        
+        busqSocio.ActualizarHoja
+        busqSocio.ActualizarLista
+        
     Else
         MsgBox "Informacion Incompleta"
     End If

@@ -3,10 +3,20 @@ Public cnn As New ADODB.Connection
 Public rs As New ADODB.Recordset
 
 Public strSQL As String
+
 Public idSocio As Integer
 Public idPrestamo As Integer
 Public idFicha As Integer
 Public idAccionista As Integer
+Public idMod As Integer
+Public idGerencia As Integer
+Public idRepresentante As Integer
+Public idNacionalidad As Integer
+Public idFormacion As Integer
+
+Public desdeHoja As Boolean
+
+Public FechaFicha As String
 Public tmpFecha As Date
 
 Public g_objFSO As Scripting.FileSystemObject
@@ -37,7 +47,7 @@ Public Sub OpenDB()
     
 Handle:
     If cnn.Errors.count > 0 Then
-        Call Error_Handle(cnn.Errors.Item(0).Source, "Mulo1", strSQL, cnn.Errors.Item(0).Number, cnn.Errors.Item(0).Description)
+        Call Error_Handle(cnn.Errors.Item(0).Source, "Módulo1", strSQL, cnn.Errors.Item(0).Number, cnn.Errors.Item(0).Description)
     End If
     cnn.Errors.Clear
     closeRS

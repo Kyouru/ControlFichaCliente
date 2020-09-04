@@ -1,8 +1,6 @@
-
-
 Private Sub btAtras_Click()
     Unload Me
-    busqSocio.Show (0)
+    busqFicha.Show (0)
 End Sub
 
 'Actualiza la Lista
@@ -18,7 +16,7 @@ Private Sub btEliminar_Click()
         If ListBox1.List(ListBox1.ListIndex) <> "" Then
             'Confirmacion antes de anular el Prestamo
             Dim resp As Integer
-            resp = MsgBox("Est・seguro que desea eliminar este pr駸tamo?", vbYesNo + vbQuestion, ListBox1.List(ListBox1.ListIndex, 3))
+            resp = MsgBox("Está seguro que desea eliminar este préstamo?", vbYesNo + vbQuestion, ListBox1.List(ListBox1.ListIndex, 3))
             If resp = vbYes Then
                 OpenDB
                 On Error GoTo Handle:
@@ -75,11 +73,21 @@ Private Sub btSeleccionar_Click()
     If ListBox1.ListIndex <> -1 Then
         idPrestamo = ListBox1.List(ListBox1.ListIndex)
         
-        Unload Me
-        busqFicha.Show (0)
+        tipoFichaPrestamo.Show (0)
     Else
         MsgBox "Seleccione una entrada"
     End If
+End Sub
+
+Private Sub btVerFichas_Click()
+    
+    If ListBox1.ListIndex <> -1 Then
+        idPrestamo = ListBox1.List(ListBox1.ListIndex)
+        mFichaPrestamo.Show (0)
+    Else
+        MsgBox "Seleccione una entrada"
+    End If
+    
 End Sub
 
 Private Sub cmbMoneda_Change()
@@ -122,8 +130,11 @@ Private Sub UserForm_Initialize()
     Dim cont As Integer
     
     'Query para obtener los Datos del Socio
-    strSQL = "SELECT DOI, CODIGO_SOCIO, NOMBRE_SOCIO FROM SOCIO" & _
-    " WHERE ID_SOCIO = " & idSocio
+    strSQL = "SELECT DOI, CODIGO_SOCIO, NOMBRE_SOCIO, FECHA_FICHA" & _
+    " FROM ((SOCIO S LEFT JOIN FICHA F ON F.ID_SOCIO_FK = S.ID_SOCIO)" & _
+    " LEFT JOIN (SELECT FM.ID_FICHA_FK, FM.FECHA_FICHA, FM.FECHA_MODIFICA, FM.USUARIO_MODIFICA, EXTENSION FROM FICHA_MOD FM RIGHT JOIN (SELECT ID_FICHA_FK, MAX(ID_FICHA_MOD) AS MAXIDFM FROM FICHA_MOD WHERE ANULADO = FALSE GROUP BY ID_FICHA_FK) AS FFMAX ON FFMAX.MAXIDFM = FM.ID_FICHA_MOD AND FFMAX.ID_FICHA_FK = FM.ID_FICHA_FK) AS FFM ON FFM.ID_FICHA_FK = F.ID_FICHA)" & _
+    " WHERE ID_FICHA = " & idFicha & _
+    " AND F.ANULADO = FALSE"
     
     OpenDB
     On Error GoTo Handle:
@@ -134,6 +145,7 @@ Private Sub UserForm_Initialize()
         lbNombre.Caption = lbNombre.Caption & rs.Fields("NOMBRE_SOCIO")
         lbCodigo.Caption = lbCodigo.Caption & rs.Fields("CODIGO_SOCIO")
         lbDOI.Caption = lbDOI.Caption & rs.Fields("DOI")
+        lbFechaFicha.Caption = lbFechaFicha.Caption & rs.Fields("FECHA_FICHA")
     End If
     closeRS
     
@@ -190,12 +202,25 @@ End Sub
 
 'Se Solicita todos los Prestamos que cumplan los filtros del Socio seleccionado previamente y se Copian a una hoja Temporal para luego poder agregarlos a la ListBox
 Public Sub ActualizarHoja()
-
-    strSQL = "SELECT ID_PRESTAMO, SOLICITUD, NOMBRE_PRODUCTO, NOMBRE_MONEDA, MONTO, " & _
-    "ID_SOCIO_FK " & _
-    "FROM ((PRESTAMO LEFT JOIN PRODUCTO ON PRODUCTO.ID_PRODUCTO = PRESTAMO.ID_PRODUCTO_FK)" & _
-    " LEFT JOIN MONEDA ON MONEDA.ID_MONEDA = PRESTAMO.ID_MONEDA_FK)" & _
-    " WHERE ID_SOCIO_FK=" & idSocio
+    
+    strSQL = "SELECT ID_PRESTAMO, MFP.MAXFF, NOMBRE_TIPO_FICHA, SOLICITUD, NOMBRE_PRODUCTO, NOMBRE_MONEDA, MONTO " & _
+    "FROM ((((((PRESTAMO P LEFT JOIN PRODUCTO PROD ON PROD.ID_PRODUCTO = P.ID_PRODUCTO_FK)" & _
+    " LEFT JOIN MONEDA M ON M.ID_MONEDA = P.ID_MONEDA_FK)" & _
+    " LEFT JOIN SOCIO S ON S.ID_SOCIO = P.ID_SOCIO_FK)" & _
+    " LEFT JOIN (SELECT FP.ID_PRESTAMO_FK, FP.ID_FICHA_PRESTAMO, FP.ID_TIPO_FICHA_FK, FP.ID_FICHA_FK, MFP.MAXFF, MAX(FP.FECHA_INGRESA) AS MAXFI FROM FICHA_PRESTAMO FP RIGHT JOIN (SELECT ID_PRESTAMO_FK AS MAXIDPREST, MAX(FECHA_FICHA_P) AS MAXFF FROM FICHA_PRESTAMO GROUP BY ID_PRESTAMO_FK) MFP ON MFP.MAXIDPREST = FP.ID_PRESTAMO_FK AND MFP.MAXFF = FP.FECHA_FICHA_P GROUP BY FP.ID_PRESTAMO_FK, FP.ID_FICHA_PRESTAMO, FP.ID_TIPO_FICHA_FK, FP.ID_FICHA_FK, MFP.MAXFF) FP ON FP.ID_PRESTAMO_FK = P.ID_PRESTAMO)" & _
+    " LEFT JOIN TIPO_FICHA TF ON TF.ID_TIPO_FICHA = FP.ID_TIPO_FICHA_FK)" & _
+    " LEFT JOIN FICHA F ON F.ID_FICHA = FP.ID_FICHA_FK)" & _
+    " WHERE S.ID_SOCIO = " & idSocio
+    
+    strSQL = "SELECT ID_PRESTAMO, MFP.MAXFF, NOMBRE_TIPO_FICHA, SOLICITUD, NOMBRE_PRODUCTO, NOMBRE_MONEDA, MONTO " & _
+    "FROM (((((((PRESTAMO P LEFT JOIN PRODUCTO PROD ON PROD.ID_PRODUCTO = P.ID_PRODUCTO_FK)" & _
+    " LEFT JOIN MONEDA M ON M.ID_MONEDA = P.ID_MONEDA_FK)" & _
+    " LEFT JOIN SOCIO S ON S.ID_SOCIO = P.ID_SOCIO_FK)" & _
+    " LEFT JOIN (SELECT FP.ID_PRESTAMO_FK, FP.ID_FICHA_FK, MFP.MAXFF, MAX(FP.FECHA_INGRESA) AS MAXFI FROM FICHA_PRESTAMO FP RIGHT JOIN (SELECT ID_PRESTAMO_FK AS MAXIDPREST, MAX(FECHA_FICHA_P) AS MAXFF FROM FICHA_PRESTAMO GROUP BY ID_PRESTAMO_FK) MFP ON MFP.MAXIDPREST = FP.ID_PRESTAMO_FK AND MFP.MAXFF = FP.FECHA_FICHA_P GROUP BY FP.ID_PRESTAMO_FK, FP.ID_FICHA_FK, MFP.MAXFF) FP ON FP.ID_PRESTAMO_FK = P.ID_PRESTAMO)" & _
+    " LEFT JOIN FICHA_PRESTAMO FP2 ON FP2.ID_PRESTAMO_FK = FP.ID_PRESTAMO_FK AND FP2.ID_FICHA_FK = FP.ID_FICHA_FK AND FP2.FECHA_FICHA_P = FP.MAXFF AND FP2.FECHA_INGRESA = FP.MAXFI)" & _
+    " LEFT JOIN TIPO_FICHA TF ON TF.ID_TIPO_FICHA = FP2.ID_TIPO_FICHA_FK)" & _
+    " LEFT JOIN FICHA F ON F.ID_FICHA = FP.ID_FICHA_FK)" & _
+    " WHERE S.ID_SOCIO = " & idSocio
     
     If tbSolicitud.Text <> "" Then
         strSQL = strSQL & " AND SOLICITUD LIKE '%" & tbSolicitud.Text & "%'"
@@ -209,16 +234,21 @@ Public Sub ActualizarHoja()
     If tbMonto.Text <> "" Then
         strSQL = strSQL & " AND MONTO LIKE '%" & tbMonto.Text & "%'"
     End If
-    strSQL = strSQL & " AND PRESTAMO.ANULADO = FALSE"
-        
+    
+    strSQL = strSQL & " AND P.ANULADO = FALSE"
+    strSQL = strSQL & " AND (F.ANULADO = FALSE OR F.ANULADO IS NULL)"
+    
+    strSQL = strSQL & " ORDER BY MFP.MAXFF DESC, ID_TIPO_FICHA ASC"
+    
     ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 1).CurrentRegion.ClearContents
     
     ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 1) = "ID_PRESTAMO"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 2) = "SOLICITUD"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 3) = "PRODUCTO"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 4) = "MONEDA"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 5) = "MONTO"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 6) = "ID_SOCIO_FK"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 2) = "ULTIMA_FICHA"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 3) = "TIPO_FICHA"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 4) = "SOLICITUD"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 5) = "PRODUCTO"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 6) = "MONEDA"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 7) = "MONTO"
     
     OpenDB
     On Error GoTo Handle:
@@ -230,8 +260,8 @@ Public Sub ActualizarHoja()
     End If
     
     ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 1).EntireColumn.NumberFormat = "0"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 5).EntireColumn.NumberFormat = "#,##0.00"
-    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 6).EntireColumn.NumberFormat = "0"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 2).EntireColumn.NumberFormat = "DD/MM/YYYY"
+    ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP).Cells(1, 7).EntireColumn.NumberFormat = "#,##0.00"
     
 Handle:
     If cnn.Errors.count > 0 Then
@@ -245,17 +275,17 @@ End Sub
 'Agrega la Hoja Temporal a la ListBox
 Public Sub ActualizarLista()
     With ThisWorkbook.Sheets(NOMBRE_HOJA_TEMP)
-        ListBox1.ColumnWidths = "0;80;60;60;80;0;"
-        ListBox1.ColumnCount = 6
+        ListBox1.ColumnWidths = "0;70;90;80;60;60;80;"
+        ListBox1.ColumnCount = 7
         ListBox1.ColumnHeads = True
         
         'En caso halla mas de una fila
         If .Range("A3") <> "" Then
-            ListBox1.RowSource = .Name & "!A2:F" & .Range("A2").End(xlDown).Row
+            ListBox1.RowSource = .Name & "!A2:G" & .Range("A2").End(xlDown).Row
         Else
             'En caso halla solamente una fila
             If .Range("A2") <> "" Then
-                ListBox1.RowSource = .Name & "!A2:F2"
+                ListBox1.RowSource = .Name & "!A2:G2"
             'En caso no hallan datos
             Else
                 ListBox1.RowSource = ""

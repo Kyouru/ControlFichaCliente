@@ -79,9 +79,9 @@ Private Sub btSeleccionar_Click()
         'Solo si se selecciono algun item de la lista y no es vacio
         If ListBox1.List(ListBox1.ListIndex) <> "" Then
             idSocio = ListBox1.List(ListBox1.ListIndex)
-            idPrestamo = 0
+            idFicha = 0
             Unload Me
-            busqPrestamo.Show (0)
+            busqFicha.Show (0)
         End If
     Else
         MsgBox "Seleccione una entrada"
